@@ -101,25 +101,25 @@ typedef PhotoViewGalleryBuilder = PhotoViewGalleryPageOptions Function(
 /// ```
 class PhotoViewGallery extends StatefulWidget {
   /// Construct a gallery with static items through a list of [PhotoViewGalleryPageOptions].
-  const PhotoViewGallery({
-    Key? key,
-    required this.pageOptions,
-    this.loadingBuilder,
-    this.backgroundDecoration,
-    this.wantKeepAlive = false,
-    this.gaplessPlayback = false,
-    this.reverse = false,
-    this.pageController,
-    this.onPageChanged,
-    this.scaleStateChangedCallback,
-    this.enableRotation = false,
-    this.scrollPhysics,
-    this.scrollDirection = Axis.horizontal,
-    this.customSize,
-    this.allowImplicitScrolling = false,
-  })  : itemCount = null,
-        builder = null,
-        super(key: key);
+  // const PhotoViewGallery({
+  //   Key? key,
+  //   required this.pageOptions,
+  //   this.loadingBuilder,
+  //   this.backgroundDecoration,
+  //   this.wantKeepAlive = false,
+  //   this.gaplessPlayback = false,
+  //   this.reverse = false,
+  //   this.pageController,
+  //   this.onPageChanged,
+  //   this.scaleStateChangedCallback,
+  //   this.enableRotation = false,
+  //   this.scrollPhysics,
+  //   this.scrollDirection = Axis.horizontal,
+  //   this.customSize,
+  //   this.allowImplicitScrolling = false,
+  // })  : itemCount = null,
+  //       builder = null,
+  //       super(key: key);
 
   /// Construct a gallery with dynamic items.
   ///
@@ -127,7 +127,9 @@ class PhotoViewGallery extends StatefulWidget {
   const PhotoViewGallery.builder({
     Key? key,
     required this.itemCount,
-    required this.builder,
+    required this.itemBuilder,
+    required this.listFileIds,
+    this.builder,
     this.loadingBuilder,
     this.backgroundDecoration,
     this.wantKeepAlive = false,
@@ -141,13 +143,16 @@ class PhotoViewGallery extends StatefulWidget {
     this.scrollDirection = Axis.horizontal,
     this.customSize,
     this.allowImplicitScrolling = false,
-  })  : pageOptions = null,
-        assert(itemCount != null),
-        assert(builder != null),
-        super(key: key);
+  });
+  // : pageOptions = null,
+  //       assert(itemCount != null),
+  //       assert(builder != null),
+  //       super(key: key);
+  final Widget? Function(BuildContext, int) itemBuilder;
+  final List<String> listFileIds;
 
   /// A list of options to describe the items in the gallery
-  final List<PhotoViewGalleryPageOptions>? pageOptions;
+  // final List<PhotoViewGalleryPageOptions>? pageOptions;
 
   /// The count of items in the gallery, only used when constructed via [PhotoViewGallery.builder]
   final int? itemCount;
@@ -203,8 +208,7 @@ class PhotoViewGallery extends StatefulWidget {
 }
 
 class _PhotoViewGalleryState extends State<PhotoViewGallery> {
-  late final PageController _controller =
-      widget.pageController ?? PageController();
+  late final PageController _controller = widget.pageController ?? PageController();
 
   void scaleStateChangedCallback(PhotoViewScaleState scaleState) {
     if (widget.scaleStateChangedCallback != null) {
@@ -216,12 +220,12 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
     return _controller.hasClients ? _controller.page!.floor() : 0;
   }
 
-  int get itemCount {
-    if (widget._isBuilder) {
-      return widget.itemCount!;
-    }
-    return widget.pageOptions!.length;
-  }
+  // int get itemCount {
+  //   if (widget._isBuilder) {
+  //     return widget.itemCount!;
+  //   }
+  //   return widget.pageOptions!.length;
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -232,86 +236,91 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
         reverse: widget.reverse,
         controller: _controller,
         onPageChanged: widget.onPageChanged,
-        itemCount: itemCount,
-        itemBuilder: _buildItem,
+        itemCount: widget.itemCount,
+        itemBuilder: widget.itemBuilder,
         scrollDirection: widget.scrollDirection,
         physics: widget.scrollPhysics,
         allowImplicitScrolling: widget.allowImplicitScrolling,
+        findChildIndexCallback: (key) {
+          final valueKey = key as ValueKey<String>;
+          final attachmentId = valueKey.value;
+          final index = widget.listFileIds.indexWhere((id) => id == attachmentId);
+          return index >= 0 ? index : null;
+        },
       ),
     );
   }
 
-  Widget _buildItem(BuildContext context, int index) {
-    final pageOption = _buildPageOption(context, index);
-    final isCustomChild = pageOption.child != null;
+  // Widget _buildItem(BuildContext context, int index) {
+  //   final pageOption = _buildPageOption(context, index);
+  //   final isCustomChild = pageOption.child != null;
 
-    final PhotoView photoView = isCustomChild
-        ? PhotoView.customChild(
-            key: ObjectKey(index),
-            child: pageOption.child,
-            childSize: pageOption.childSize,
-            backgroundDecoration: widget.backgroundDecoration,
-            wantKeepAlive: widget.wantKeepAlive,
-            controller: pageOption.controller,
-            scaleStateController: pageOption.scaleStateController,
-            customSize: widget.customSize,
-            heroAttributes: pageOption.heroAttributes,
-            scaleStateChangedCallback: scaleStateChangedCallback,
-            enableRotation: widget.enableRotation,
-            initialScale: pageOption.initialScale,
-            minScale: pageOption.minScale,
-            maxScale: pageOption.maxScale,
-            scaleStateCycle: pageOption.scaleStateCycle,
-            onTapUp: pageOption.onTapUp,
-            onTapDown: pageOption.onTapDown,
-            onScaleEnd: pageOption.onScaleEnd,
-            gestureDetectorBehavior: pageOption.gestureDetectorBehavior,
-            tightMode: pageOption.tightMode,
-            filterQuality: pageOption.filterQuality,
-            basePosition: pageOption.basePosition,
-            disableGestures: pageOption.disableGestures,
-          )
-        : PhotoView(
-            key: ObjectKey(index),
-            imageProvider: pageOption.imageProvider,
-            loadingBuilder: widget.loadingBuilder,
-            backgroundDecoration: widget.backgroundDecoration,
-            wantKeepAlive: widget.wantKeepAlive,
-            controller: pageOption.controller,
-            scaleStateController: pageOption.scaleStateController,
-            customSize: widget.customSize,
-            semanticLabel: pageOption.semanticLabel,
-            gaplessPlayback: widget.gaplessPlayback,
-            heroAttributes: pageOption.heroAttributes,
-            scaleStateChangedCallback: scaleStateChangedCallback,
-            enableRotation: widget.enableRotation,
-            initialScale: pageOption.initialScale,
-            minScale: pageOption.minScale,
-            maxScale: pageOption.maxScale,
-            scaleStateCycle: pageOption.scaleStateCycle,
-            onTapUp: pageOption.onTapUp,
-            onTapDown: pageOption.onTapDown,
-            onScaleEnd: pageOption.onScaleEnd,
-            gestureDetectorBehavior: pageOption.gestureDetectorBehavior,
-            tightMode: pageOption.tightMode,
-            filterQuality: pageOption.filterQuality,
-            basePosition: pageOption.basePosition,
-            disableGestures: pageOption.disableGestures,
-            errorBuilder: pageOption.errorBuilder,
-          );
+  //   final PhotoView photoView = isCustomChild
+  //       ? PhotoView.customChild(
+  //           key: ObjectKey(index),
+  //           child: pageOption.child,
+  //           childSize: pageOption.childSize,
+  //           backgroundDecoration: widget.backgroundDecoration,
+  //           wantKeepAlive: widget.wantKeepAlive,
+  //           controller: pageOption.controller,
+  //           scaleStateController: pageOption.scaleStateController,
+  //           customSize: widget.customSize,
+  //           heroAttributes: pageOption.heroAttributes,
+  //           scaleStateChangedCallback: scaleStateChangedCallback,
+  //           enableRotation: widget.enableRotation,
+  //           initialScale: pageOption.initialScale,
+  //           minScale: pageOption.minScale,
+  //           maxScale: pageOption.maxScale,
+  //           scaleStateCycle: pageOption.scaleStateCycle,
+  //           onTapUp: pageOption.onTapUp,
+  //           onTapDown: pageOption.onTapDown,
+  //           onScaleEnd: pageOption.onScaleEnd,
+  //           gestureDetectorBehavior: pageOption.gestureDetectorBehavior,
+  //           tightMode: pageOption.tightMode,
+  //           filterQuality: pageOption.filterQuality,
+  //           basePosition: pageOption.basePosition,
+  //           disableGestures: pageOption.disableGestures,
+  //         )
+  //       : PhotoView(
+  //           key: ObjectKey(index),
+  //           imageProvider: pageOption.imageProvider,
+  //           loadingBuilder: widget.loadingBuilder,
+  //           backgroundDecoration: widget.backgroundDecoration,
+  //           wantKeepAlive: widget.wantKeepAlive,
+  //           controller: pageOption.controller,
+  //           scaleStateController: pageOption.scaleStateController,
+  //           customSize: widget.customSize,
+  //           semanticLabel: pageOption.semanticLabel,
+  //           gaplessPlayback: widget.gaplessPlayback,
+  //           heroAttributes: pageOption.heroAttributes,
+  //           scaleStateChangedCallback: scaleStateChangedCallback,
+  //           enableRotation: widget.enableRotation,
+  //           initialScale: pageOption.initialScale,
+  //           minScale: pageOption.minScale,
+  //           maxScale: pageOption.maxScale,
+  //           scaleStateCycle: pageOption.scaleStateCycle,
+  //           onTapUp: pageOption.onTapUp,
+  //           onTapDown: pageOption.onTapDown,
+  //           onScaleEnd: pageOption.onScaleEnd,
+  //           gestureDetectorBehavior: pageOption.gestureDetectorBehavior,
+  //           tightMode: pageOption.tightMode,
+  //           filterQuality: pageOption.filterQuality,
+  //           basePosition: pageOption.basePosition,
+  //           disableGestures: pageOption.disableGestures,
+  //           errorBuilder: pageOption.errorBuilder,
+  //         );
 
-    return ClipRect(
-      child: photoView,
-    );
-  }
+  //   return ClipRect(
+  //     child: photoView,
+  //   );
+  // }
 
-  PhotoViewGalleryPageOptions _buildPageOption(
-      BuildContext context, int index) {
-    if (widget._isBuilder) {
-      return widget.builder!(context, index);
-    }
-    return widget.pageOptions![index];
-  }
+  // PhotoViewGalleryPageOptions _buildPageOption(BuildContext context, int index) {
+  //   if (widget._isBuilder) {
+  //     return widget.builder!(context, index);
+  //   }
+  //   return widget.pageOptions![index];
+  // }
 }
 
 /// A helper class that wraps individual options of a page in [PhotoViewGallery]
